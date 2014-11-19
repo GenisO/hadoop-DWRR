@@ -38,9 +38,16 @@
         <value>proxy1:8050</value>
     </property>
     <property>
+	<name>yarn.resourcemanager.webapp.address</name>
+	<value>proxy1:8080</value>
+    </property>
+
+<!--
+    <property>
         <name>yarn.resourcemanager.nodes.include-path</name>
   	<value>slaves-nodemanager</value>
   	<description>Path to file with nodes to include.
   	</description>
     </property>
+-->
 </configuration>

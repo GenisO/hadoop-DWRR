@@ -28,6 +28,6 @@
 </property>
 <property>
   <name>hadoop.tmp.dir</name>
-  <value>/srv/node/sdb1/hadoop</value>
+  <value>/home/hadoop/hadoop-dir/tmp/dfs</value>
 </property>
 </configuration>
