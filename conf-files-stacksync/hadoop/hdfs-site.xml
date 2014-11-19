@@ -19,21 +19,19 @@
 <configuration>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr</name>
-		<value>false</value>
+		<value>true</value>
 		<description>If true sheduler DWRR, else default sheduler
 		</description>
-		<final>true</final>
 	</property>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr.weigthedFairShare</name>
-		<value>false</value>
+		<value>true</value>
 		<description>If true DWRR, else default sheduler FairShare
 		</description>
-		<final>true</final>
 	</property>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr.quantumsize</name>
-		<value>1048576</value>
+		<value>33554432</value>
 		<description>Size of quantum for dwrr. Default value is blocksize (or its default when it doesn't exist)
 		</description>
 	</property>
@@ -51,7 +49,7 @@
 	</property>
 	<property>
 		<name>dfs.blocksize</name>
-		<value>1048576</value>
+		<value>33554432</value>
 		<description>
 			The default block size for new files, in bytes.
 			You can use the following suffix (case insensitive):

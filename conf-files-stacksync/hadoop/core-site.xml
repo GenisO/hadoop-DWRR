@@ -19,7 +19,7 @@
 <configuration>
 <property>
   <name>fs.defaultFS</name>
-  <value>hdfs://hadoop100:54310</value>
+  <value>hdfs://proxy1:54310</value>
   <description>The name of the default file system.  A URI whose
   scheme and authority determine the FileSystem implementation.  The
   uri's scheme determines the config property (fs.SCHEME.impl) naming
@@ -28,6 +28,6 @@
 </property>
 <property>
   <name>hadoop.tmp.dir</name>
-  <value>/usr/local/hadoop/data</value>
+  <value>/srv/node/sdb1/hadoop</value>
 </property>
 </configuration>

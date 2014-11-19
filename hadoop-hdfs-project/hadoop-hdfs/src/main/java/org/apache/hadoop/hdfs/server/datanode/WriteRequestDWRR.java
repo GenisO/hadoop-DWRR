@@ -78,4 +78,18 @@ public class WriteRequestDWRR {
     return checksumArray;
   }
 
+  public void clear() {
+    syncBlock = false;
+    lastPacketInBlock = false;
+    len = 0;
+    offsetInBlock = 0;
+    checksumArray = null;
+    header = null;
+    checksumLen = 0;
+    checksumBuf = null;
+    array = null;
+    startByteToDisk = 0;
+    numBytesToDisk = 0;
+
+  }
 }

@@ -8,7 +8,7 @@
  </property>
  <property>
   <name>mapred.job.tracker</name>
-  <value>hadoop100:54311</value>
+  <value>proxy1:54311</value>
   <description>The host and port that the MapReduce job tracker runs
   at.  If "local", then jobs are run in-process as a single map
   and reduce task.

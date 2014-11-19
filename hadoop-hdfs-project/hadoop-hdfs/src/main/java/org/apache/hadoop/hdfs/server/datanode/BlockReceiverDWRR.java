@@ -710,7 +710,7 @@ class BlockReceiverDWRR implements Closeable {
       LOG.info("CAMAMILLA " + this + "  finalizeReceivePacket throttler");      // TODO TODO log
       throttler.throttle(len);
     }
-
+    req.clear();
     LOG.info("CAMAMILLA " + this + "  end finalizeReceivePacket");      // TODO TODO log
   }
 
@@ -822,7 +822,7 @@ class BlockReceiverDWRR implements Closeable {
         LOG.info("CAMAMILLA "+this+"  round toBeWritten "+toBeWritten.size());      // TODO TODO log
         finalizeReceivePacket(toBeWritten.poll());
       }
-
+      toBeWritten = null;
       // wait for all outstanding packet responses. And then
       // indicate responder to gracefully shutdown.
       // Mark that responder has been closed for future processing

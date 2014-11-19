@@ -23,18 +23,24 @@
     </property>
     <property>
         <name>yarn.resourcemanager.hostname</name>
-        <value>hadoop100</value>
+        <value>proxy1</value>
     </property>
     <property>
         <name>yarn.resourcemanager.resource-tracker.address</name>
-        <value>hadoop100:8025</value>
+        <value>proxy1:8025</value>
     </property>
     <property>
         <name>yarn.resourcemanager.scheduler.address</name>
-        <value>hadoop100:8030</value>
+        <value>proxy1:8030</value>
     </property>
     <property>
         <name>yarn.resourcemanager.address</name>
-        <value>hadoop100:8050</value>
+        <value>proxy1:8050</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.nodes.include-path</name>
+  	<value>slaves-nodemanager</value>
+  	<description>Path to file with nodes to include.
+  	</description>
     </property>
 </configuration>
