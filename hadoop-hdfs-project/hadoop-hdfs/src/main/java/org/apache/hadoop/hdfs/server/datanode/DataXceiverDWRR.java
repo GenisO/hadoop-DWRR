@@ -165,7 +165,7 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
       LOG.debug("Number of active connections is: "
           + datanode.getXceiverCount());
     }
-
+    LOG.info("CAMAMILLA DataXceiverDWRR.constructor time="+now());      // TODO TODO log
   }
 
   /**
@@ -227,7 +227,7 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
 //				opRequestShortCircuitShm();
 //				break;
       default:
-        LOG.info("CAMAMILLA "+classId+" ERROR makeOp " + op.code);      // TODO TODO log
+        LOG.error("CAMAMILLA "+classId+" ERROR makeOp " + op.code);      // TODO TODO log
         throw new IOException("Unknown op " + op + " in makeOp");
     }
 
@@ -237,6 +237,7 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
 
   /** Receive OP_READ_BLOCK */
   private void opReadBlock() throws IOException {
+    LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock queue init time="+now());      // TODO TODO log
     proto = DataTransferProtos.OpReadBlockProto.parseFrom(vintPrefixed(in));
     classId = proto.getHeader().getBaseHeader().getBlock().getClassId();
     LOG.info("CAMAMILLA "+classId+" ENQUEUE READ INIT");        // TODO TODO log
@@ -244,11 +245,13 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
     RequestObjectDWRR newReq = new RequestObjectDWRR(this, classId, op, proto.getLen());
     dwrrmanager.addOp(newReq, classId);
 
+    LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock queue end time="+now());      // TODO TODO log
     LOG.info("CAMAMILLA "+classId+" ENQUEUE READ FINALIZED");        // TODO TODO log
   }
 
   private void makeReadBlock(final DataTransferProtos.OpReadBlockProto protoc) {
     LOG.info("CAMAMILLA "+classId+" READ INIT");      // TODO TODO log
+    LOG.info("CAMAMILLA DataXceiverDWRR.makeReadBlock init time="+now());      // TODO TODO log
     try {
       readBlock(PBHelper.convert(protoc.getHeader().getBaseHeader().getBlock()),
         PBHelper.convert(protoc.getHeader().getBaseHeader().getToken()),
@@ -261,13 +264,15 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
           CachingStrategy.newDefaultStrategy()));
       LOG.info("CAMAMILLA "+classId+" READ FINALIZED");      // TODO TODO log
     } catch (IOException e) {
-      LOG.info("CAMAMILLA "+classId+" error");      // TODO TODO log
+      LOG.error("CAMAMILLA "+classId+" error");      // TODO TODO log
       e.printStackTrace();
     }
+    LOG.info("CAMAMILLA DataXceiverDWRR.makeReadBlock end time="+now());      // TODO TODO log
   }
 
   /** Receive OP_WRITE_BLOCK */
   private void opWriteBlock() throws IOException {
+    LOG.info("CAMAMILLA DataXceiverDWRR.opWriteBlock queue init time="+now());      // TODO TODO log
     DataTransferProtos.OpWriteBlockProto proto = DataTransferProtos.OpWriteBlockProto.parseFrom(vintPrefixed(in));
     classId = proto.getHeader().getBaseHeader().getBlock().getClassId();
     LOG.info("CAMAMILLA "+classId+" ENQUEUE WRITE INIT");        // TODO TODO log
@@ -289,16 +294,17 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
       LOG.info("CAMAMILLA "+classId+" error");      // TODO TODO log
       e.printStackTrace();
     }
-
+    LOG.info("CAMAMILLA DataXceiverDWRR.opWriteBlock queue end time="+now());      // TODO TODO log
     LOG.info("CAMAMILLA "+classId+" ENQUEUE WRITE FINALIZED");        // TODO TODO log
   }
 
   private void makeWriteBlock () {
     LOG.info("CAMAMILLA "+classId+" WRITE INIT");      // TODO TODO log
+    LOG.info("CAMAMILLA DataXceiverDWRR.makeWriteBlock init time="+now());      // TODO TODO log
     finalizeWriteBlock();
     closeStreams();
     LOG.info("CAMAMILLA "+classId+" WRITE FINALIZED");      // TODO TODO log
-
+    LOG.info("CAMAMILLA DataXceiverDWRR.makeWriteBlock end time="+now());      // TODO TODO log
   }
   /**
    * Read/write data from/to the DataXceiverServer.
@@ -307,7 +313,7 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
   public void run() {
     int opsProcessed = 0;
     opsQueded = 0;
-
+    LOG.info("CAMAMILLA DataXceiverDWRR.run time="+now());      // TODO TODO log
     op = null;
     try {
       DataXceiverServer.addPeer(peer, Thread.currentThread());
@@ -982,12 +988,10 @@ public class DataXceiverDWRR extends Receiver implements Runnable {
           + localAddress + " of size " + block.getNumBytes());
       }
     } catch (IOException e) {
-      LOG.info("CAMAMILLA "+classId+" exception finalizeWriteBlock "+e);      // TODO TODO log
+      LOG.error("CAMAMILLA "+classId+" exception finalizeWriteBlock "+e);      // TODO TODO log
     } finally {
       IOUtils.closeStream(blockReceiver);
     }
-
-    LOG.info("CAMAMILLA "+classId+" end finalizeWriteBlock ");      // TODO TODO log
 
     //update metrics
     datanode.metrics.addWriteBlockOp(elapsed());

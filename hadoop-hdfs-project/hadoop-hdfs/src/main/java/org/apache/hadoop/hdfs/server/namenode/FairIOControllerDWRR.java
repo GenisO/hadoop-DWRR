@@ -136,7 +136,7 @@ public class FairIOControllerDWRR {
 
 
   public float getClassWeight(long classId, String dnuuid) {
-    // TODO TODO contorlar el cas que no existeixi, llavors preguntar per xattrs
+    // TODO TODO controlar el cas que no existeixi, llavors preguntar per xattrs
     // aixo passa al apagar i tornar a encedre el sistema, ja que tot esta en memoria
     LOG.info("CAMAMILLA FairIOControllerDWRR.getClassWeight classId="+classId+" dnid="+dnuuid);        // TODO TODO log
     DatanodeID dnid = nodeUuidtoNodeID.get(dnuuid);

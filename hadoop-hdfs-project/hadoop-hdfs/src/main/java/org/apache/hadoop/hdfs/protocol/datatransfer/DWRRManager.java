@@ -33,6 +33,7 @@ public class DWRRManager {
   private int processedNumQueues;
   private long quantumSize;
   private boolean weigthedFairShare;
+  private boolean enoughDeficitCounter;
   private Daemon threadedDWRR = new Daemon(new ThreadGroup("DWRR Thread"),
     new Runnable() {
       public final Log LOG = LogFactory.getLog(Daemon.class);
@@ -51,95 +52,101 @@ public class DWRRManager {
             }
           }
 
-          WeightQueueDWRR<RequestObjectDWRR> queue = allRequestsQueue.peek();
-          while (allRequestsQueue.size() > 0 && queue.numPendingRequests() > 0) {
+
+          while (allRequestsQueue.size() > 0) {
+            WeightQueueDWRR<RequestObjectDWRR> queue = allRequestsQueue.peek();
+            LOG.info("CAMAMILLA while process requests is new round for " + queue.getClassId());        // TODO TODO log
             datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
-            LOG.info("CAMAMILLA while process requests init allRequestsQueue.size " + allRequestsQueue.size() + " queue.numPendingRequests " + queue.numPendingRequests() + " of " + queue.getClassId());        // TODO TODO log
-            RequestObjectDWRR request = queue.peek();
+
             float queueDeficitCounter = queue.getDeficitCounter();
-            if (queue.isNewRound()) {
-              LOG.info("CAMAMILLA while process requests is new round for " + queue.getClassId());        // TODO TODO log
-              queue.setNewRound(false);
-              if (!weigthedFairShare) queueDeficitCounter += quantumSize;
-              else {
-                LOG.info("CAMAMILLA while calcul deficitCounter = " +queueDeficitCounter+" + "+ quantumSize + " * " + queue.getWeight() + " / " + maxWeight());        // TODO TODO log
-                queueDeficitCounter += quantumSize * queue.getWeight() / maxWeight();
-              }
-              queue.setDeficitCounter(queueDeficitCounter);
+
+            if (!weigthedFairShare) queueDeficitCounter += quantumSize;
+            else {
+              LOG.info("CAMAMILLA while calcul deficitCounter = " +queueDeficitCounter+" + "+ quantumSize + " * " + queue.getWeight() + " / " + maxWeight());        // TODO TODO log
+              queueDeficitCounter += quantumSize * queue.getWeight() / maxWeight();
             }
+            queue.setDeficitCounter(queueDeficitCounter);
 
-            long requestSize = request.getSize();
-            LOG.info("CAMAMILLA while queda prou deficitCounter? " +requestSize+" <= " +queueDeficitCounter+" ?");        // TODO TODO log
-            if (requestSize <= queueDeficitCounter) {     // Processar petico
-              queueDeficitCounter -= requestSize;
-              queue.setDeficitCounter(queueDeficitCounter);
-              request = queue.peek();
+            enoughDeficitCounter = true;
 
-              LOG.info("CAMAMILLA " + request.getClassId() + " Thread processar peticio " + request.getOp());        // TODO TODO log
-              try {
-                DataXceiverDWRR dXc = request.getdXc();
-                dXc.makeOp(request.getOp());
-              } catch (Exception e) {
-                LOG.info("CAMAMILLA " + request.getClassId() + " Thread DWRRManager peta " + e);        // TODO TODO log
-              }
+            while (enoughDeficitCounter && queue.size() > 0) {
+              RequestObjectDWRR request = queue.peek();
 
-              queue.updateProcessedRequests();
-              queue.updateProcessedBytes(requestSize);
+              long requestSize = request.getSize();
+              LOG.info("CAMAMILLA while queda prou deficitCounter? " +requestSize+" <= " +queueDeficitCounter+" ?");        // TODO TODO log
+              if (requestSize <= queueDeficitCounter) {     // Processar petico
+                queueDeficitCounter -= requestSize;
+                queue.setDeficitCounter(queueDeficitCounter);
 
-              datanode.getMetrics().incrProcessedRequest("" + queue.getClassId(), requestSize, queue.getWeight());
+                LOG.info("CAMAMILLA " + request.getClassId() + " Thread processar peticio " + request.getOp());        // TODO TODO log
+                try {
 
-              synchronized (lock) {
-                queue.poll();
-                if (queue.numPendingRequests() == 0) {      // cua servida
-                  LOG.info("CAMAMILLA while process numPendingRequests = 0");        // TODO TODO log
-                  queue.setDeficitCounter(0F);
-                  allRequestsQueue.poll();
-                  processedNumQueues++;
-                  datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
-                  LOG.info("CAMAMILLA " + numQueues + " cua " + queue.getClassId() + " buida " + " amb peticions servides= " + queue.getProcessedRequests());        // TODO TODO log
-                  String weights = "";
-                  for (float weight : currentActiveWeights) {
-                    weights+=" "+weight;
-                  }
-
-                  LOG.info("CAMAMILLA DWRRManager.addOp pesos abans deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
-
-                  currentActiveWeights.remove(queue.getWeight());
-
-                  weights = "";
-                  for (float weight : currentActiveWeights) {
-                    weights+=" "+weight;
-                  }
-
-                  LOG.info("CAMAMILLA DWRRManager.addOp pesos despres deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
-
-                  numQueues--;
-                  queue = allRequestsQueue.peek();    // Seleccionar seguent
+                  DataXceiverDWRR dXc = request.getdXc();
+                  LOG.info("CAMAMILLA DWRRManager abans de processar time="+now());      // TODO TODO log
+                  dXc.makeOp(request.getOp());
+                  LOG.info("CAMAMILLA DWRRManager despres de processar time="+now());      // TODO TODO log
+                } catch (Exception e) {
+                  LOG.info("CAMAMILLA " + request.getClassId() + " Thread DWRRManager peta " + e);        // TODO TODO log
                 }
+
+                queue.updateProcessedRequests();
+                queue.updateProcessedBytes(requestSize);
+
+                datanode.getMetrics().incrProcessedRequest("" + queue.getClassId(), requestSize, queue.getWeight());
+
+                synchronized (lock) {
+                  queue.poll();
+                  if (queue.numPendingRequests() == 0) {      // cua servida
+                    LOG.info("CAMAMILLA while process numPendingRequests = 0");        // TODO TODO log
+                    queue.setDeficitCounter(0F);
+                    allRequestsQueue.poll();
+                    processedNumQueues++;
+                    datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
+                    LOG.info("CAMAMILLA " + numQueues + " cua " + queue.getClassId() + " buida " + " amb peticions servides= " + queue.getProcessedRequests());        // TODO TODO log
+                    String weights = "";
+                    for (float weight : currentActiveWeights) {
+                      weights+=" "+weight;
+                    }
+
+                    LOG.info("CAMAMILLA DWRRManager.addOp pesos abans deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
+
+                    currentActiveWeights.remove(queue.getWeight());
+
+                    weights = "";
+                    for (float weight : currentActiveWeights) {
+                      weights+=" "+weight;
+                    }
+
+                    LOG.info("CAMAMILLA DWRRManager.addOp pesos despres deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
+
+                    numQueues--;
+                    enoughDeficitCounter = false;
+                    //queue = allRequestsQueue.peek();    // Seleccionar seguent
+                  }
+                }
+              } else {      // Augmentar deficitCounter i encuar i mirar seguent cua
+                LOG.info("CAMAMILLA while process Augmentar deficitCounter");        // TODO TODO log
+                allRequestsQueue.poll();
+
+                LOG.info("CAMAMILLA while process encara te peticions, tornar a encuar");        // TODO TODO log
+                allRequestsQueue.add(queue);
+
+                enoughDeficitCounter = false;
+                //queue = allRequestsQueue.peek();
               }
 
-            } else {      // Augmentar deficitCounter i encuar i mirar seguent cua
-              LOG.info("CAMAMILLA while process Augmentar deficitCounter");        // TODO TODO log
-              allRequestsQueue.poll();
-
-              LOG.info("CAMAMILLA while process encara te peticions, tornar a encuar");        // TODO TODO log
-              queue.setNewRound(true);
-              allRequestsQueue.add(queue);
-
-              queue = allRequestsQueue.peek();
+              LOG.info("CAMAMILLA INI print");          // TODO TODO log
+              for (long key : allRequestMap.keySet()) {
+                WeightQueueDWRR<RequestObjectDWRR> queueAux = allRequestMap.get(key);
+                LOG.info(now() + "CAMAMILLA " + queueAux.toString());          // TODO TODO log
+              }
+              String weights = "";
+              for (float weight : currentActiveWeights) {
+                weights+=" "+weight;
+              }
+              LOG.info("CAMAMILLA DWRRManager.Thread run pesos son {"+weights+"}");      // TODO TODO log
+              LOG.info("CAMAMILLA END print");          // TODO TODO log
             }
-
-            LOG.info("CAMAMILLA INI print");          // TODO TODO log
-            for (long key : allRequestMap.keySet()) {
-              WeightQueueDWRR<RequestObjectDWRR> queueAux = allRequestMap.get(key);
-              LOG.info(now() + "CAMAMILLA " + queueAux.toString());          // TODO TODO log
-            }
-            String weights = "";
-            for (float weight : currentActiveWeights) {
-              weights+=" "+weight;
-            }
-            LOG.info("CAMAMILLA DWRRManager.Thread run pesos son {"+weights+"}");      // TODO TODO log
-            LOG.info("CAMAMILLA END print");          // TODO TODO log
           }
         }
       }
@@ -196,7 +203,7 @@ public class DWRRManager {
             LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
             weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
           } else {
-            LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
+            LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
             weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
           }
         } catch (IOException e) {

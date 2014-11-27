@@ -299,6 +299,7 @@ public class DataNodeMetrics {
     if (registry.get(name) == null) {
       registry.newStatShare(name, desc, "Ops", "Bytes", true, totalBytes);
     }
+
     MutableStatShare reg = ((MutableStatShare) registry.get(name));
     reg.setWeight(weight);
 

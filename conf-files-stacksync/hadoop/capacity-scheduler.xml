@@ -45,17 +45,23 @@
 
   <property>
     <name>yarn.scheduler.capacity.root.queues</name>
-    <value>default</value>
+    <value>alpha,default</value>
     <description>
       The queues at the this level (root is the root queue).
     </description>
   </property>
 
   <property>
-    <name>yarn.scheduler.capacity.root.default.capacity</name>
-    <value>100</value>
-    <description>Default queue target capacity.</description>
-  </property>
+     <name>yarn.scheduler.capacity.root.alpha.capacity</name>
+     <value>50</value>
+     <description>Default queue target capacity.</description>
+   </property>
+ 
+  <property>
+     <name>yarn.scheduler.capacity.root.default.capacity</name>
+     <value>50</value>
+     <description>Default queue target capacity.</description>
+   </property>
 
   <property>
     <name>yarn.scheduler.capacity.root.default.user-limit-factor</name>
@@ -74,12 +80,20 @@
   </property>
 
   <property>
-    <name>yarn.scheduler.capacity.root.default.state</name>
-    <value>RUNNING</value>
-    <description>
-      The state of the default queue. State can be one of RUNNING or STOPPED.
-    </description>
-  </property>
+     <name>yarn.scheduler.capacity.root.alpha.state</name>
+     <value>RUNNING</value>
+     <description>
+       The state of the default queue. State can be one of RUNNING or STOPPED.
+     </description>
+   </property>
+ 
+  <property>
+     <name>yarn.scheduler.capacity.root.default.state</name>
+     <value>RUNNING</value>
+     <description>
+       The state of the default queue. State can be one of RUNNING or STOPPED.
+     </description>
+   </property>
 
   <property>
     <name>yarn.scheduler.capacity.root.default.acl_submit_applications</name>
@@ -109,3 +123,4 @@
   </property>
 
 </configuration>
+

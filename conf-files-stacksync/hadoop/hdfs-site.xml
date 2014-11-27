@@ -18,14 +18,20 @@
 
 <configuration>
 	<property>
+		<name>dfs.datanode.xceiver.dwrr.cgroups</name>
+		<value>false</value>
+		<description>If true use of cgroups, else false
+		</description>
+	</property>
+	<property>
 		<name>dfs.datanode.xceiver.dwrr</name>
-		<value>true</value>
+		<value>false</value>
 		<description>If true sheduler DWRR, else default sheduler
 		</description>
 	</property>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr.weigthedFairShare</name>
-		<value>true</value>
+		<value>false</value>
 		<description>If true DWRR, else default sheduler FairShare
 		</description>
 	</property>
@@ -89,3 +95,4 @@
 		<value>/home/hadoop/hadoop-dir/tmp/dfs/namesecondary</value>
 	</property>	
 </configuration>
+

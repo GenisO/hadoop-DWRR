@@ -601,12 +601,10 @@ class BlockReceiverDWRR implements Closeable {
 
           toBeWritten.add(new WriteRequestDWRR(dataBuf.array().clone(), startByteToDisk, numBytesToDisk, checksumBuf.duplicate(), checksumBuf.array().clone(), checksumLen, len, offsetInBlock, syncBlock, lastPacketInBlock));
 
-          LOG.info("CAMAMILLA " + this + "  finalizeReceivePacket  added toBeWritten");      // TODO TODO log
-
           ChunkChecksum last = replicaInfo.getLastChecksumAndDataLen();
 
           if (offsetInBlock % bytesPerChecksum != 0) {
-            LOG.info("CAMAMILLA " + this + "  mod onDiskLen petara offsetInBlock " + offsetInBlock + " bytesPerChecksum " + bytesPerChecksum);      // TODO TODO log
+            LOG.error("CAMAMILLA " + this + "  mod onDiskLen petara offsetInBlock " + offsetInBlock + " bytesPerChecksum " + bytesPerChecksum);      // TODO TODO log
           }
           replicaInfo.setLastChecksumAndDataLen(
             offsetInBlock, last.getChecksum()
@@ -698,10 +696,9 @@ class BlockReceiverDWRR implements Closeable {
       flushOrSync(syncBlock);
 
       datanode.metrics.incrBytesWritten(len);
-
       manageWriterOsCache(offsetInBlock);
     } catch (IOException iex) {
-      LOG.info("CAMAMILLA " + this + "  exception finalizeReceivePacket 1");      // TODO TODO log
+      LOG.error("CAMAMILLA " + this + "  exception finalizeReceivePacket 1");      // TODO TODO log
       datanode.checkDiskError();
       throw iex;
     }
@@ -711,7 +708,6 @@ class BlockReceiverDWRR implements Closeable {
       throttler.throttle(len);
     }
     req.clear();
-    LOG.info("CAMAMILLA " + this + "  end finalizeReceivePacket");      // TODO TODO log
   }
 
 
@@ -819,7 +815,6 @@ class BlockReceiverDWRR implements Closeable {
   void finalizeReceiveBlock() throws IOException {
     try {
       while (toBeWritten.size() > 0) {
-        LOG.info("CAMAMILLA "+this+"  round toBeWritten "+toBeWritten.size());      // TODO TODO log
         finalizeReceivePacket(toBeWritten.poll());
       }
       toBeWritten = null;
@@ -836,7 +831,6 @@ class BlockReceiverDWRR implements Closeable {
       // For client-writes, the block is finalized in the PacketResponder.
       if (isDatanode || isTransfer) {
         // close the block/crc files
-        LOG.info("CAMAMILLA "+this+"  finalizeReceiveBlock do close on isDatanode");      // TODO TODO log
         close();
         block.setNumBytes(replicaInfo.getNumBytes());
 
@@ -870,12 +864,10 @@ class BlockReceiverDWRR implements Closeable {
             + " from " + inAddr);
         }
 
-        LOG.info("CAMAMILLA "+this+"  bloc tancat");      // TODO TODO log
-
       }
 
     } catch (IOException ioe) {
-      LOG.info("CAMAMILLA "+this+" ioexception finalizeReceiveBlock "+ioe);      // TODO TODO log
+      LOG.error("CAMAMILLA "+this+" ioexception finalizeReceiveBlock "+ioe);      // TODO TODO log
       if (datanode.isRestarting()) {
         // Do not throw if shutting down for restart. Otherwise, it will cause
         // premature termination of responder.
@@ -885,7 +877,7 @@ class BlockReceiverDWRR implements Closeable {
         throw ioe;
       }
     } catch (Exception e) {				// TODO TODO no hi era en l'ogriginal
-      LOG.info("CAMAMILLA "+this+" exception finalizeReceiveBlock "+e);      // TODO TODO log
+      LOG.error("CAMAMILLA "+this+" exception finalizeReceiveBlock "+e);      // TODO TODO log
     } finally {
       // Clear the previous interrupt state of this thread.
       Thread.interrupted();

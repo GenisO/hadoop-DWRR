@@ -360,18 +360,8 @@ public class FSDirectory implements Closeable {
           List<XAttr> xattrs = getXAttrs(arrayInodes[i].getFullPathName());
 
           for (XAttr xattr : xattrs) {
-            if (xattr.getName().equals("user." + DWRRManager.nameWeight)) {
-              classId = arrayInodes[i].getId();
-              LOG.info("CAMAMILLA FSDirectory.addBlock set classId 1 with parent value=" + classId);          // TODO TODO log
-              break;
-            }
             if (xattr.getName().equals(DWRRManager.nameWeight)) {     // entra en aquest
               classId = arrayInodes[i].getId();
-              break;
-            }
-            if (xattr.getName().equals(XAttr.NameSpace.USER + "." + DWRRManager.nameWeight)) {
-              classId = arrayInodes[i].getId();
-              LOG.info("CAMAMILLA FSDirectory.addBlock set classId 3 with parent value=" + classId);          // TODO TODO log
               break;
             }
           }
