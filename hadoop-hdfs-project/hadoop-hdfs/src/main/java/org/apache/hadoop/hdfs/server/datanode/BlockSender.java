@@ -581,6 +581,8 @@ class BlockSender implements java.io.Closeable {
         }
       }
       throw ioeToSocketException(e);
+    } catch (Exception e) {
+      LOG.error("CAMAMILLA error BlockeSender.sendPacket ", e);
     }
 
     if (throttler != null) { // rebalancing so throttle

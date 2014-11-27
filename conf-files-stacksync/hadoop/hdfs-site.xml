@@ -25,13 +25,13 @@
 	</property>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr</name>
-		<value>false</value>
+		<value>true</value>
 		<description>If true sheduler DWRR, else default sheduler
 		</description>
 	</property>
 	<property>
 		<name>dfs.datanode.xceiver.dwrr.weigthedFairShare</name>
-		<value>false</value>
+		<value>true</value>
 		<description>If true DWRR, else default sheduler FairShare
 		</description>
 	</property>

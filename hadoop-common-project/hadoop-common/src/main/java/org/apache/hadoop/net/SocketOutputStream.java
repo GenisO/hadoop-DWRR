@@ -187,7 +187,7 @@ public class SocketOutputStream extends OutputStream
    * @param count number of bytes to transfer.
    * @param waitForWritableTime nanoseconds spent waiting for the socket 
    *        to become writable
-   * @param transferTime nanoseconds spent transferring data
+   * @param transferToTime nanoseconds spent transferring data
    * 
    * @throws EOFException 
    *         If end of input file is reached before requested number of 
@@ -253,7 +253,8 @@ public class SocketOutputStream extends OutputStream
 
   /**
    * Call
-   * {@link #transferToFully(FileChannel, long, int, MutableRate, MutableRate)}
+   * {@link #transferToFully(FileChannel fileCh, long position, int count,
+    LongWritable waitForWritableTime, LongWritable transferToTime)}
    * with null <code>waitForWritableTime</code> and <code>transferToTime</code>
    */
   public void transferToFully(FileChannel fileCh, long position, int count)

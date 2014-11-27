@@ -80,11 +80,13 @@ public class DWRRManager {
 
                 LOG.info("CAMAMILLA " + request.getClassId() + " Thread processar peticio " + request.getOp());        // TODO TODO log
                 try {
-
                   DataXceiverDWRR dXc = request.getdXc();
-                  LOG.info("CAMAMILLA DWRRManager abans de processar time="+now());      // TODO TODO log
+                  long ini = now();
                   dXc.makeOp(request.getOp());
-                  LOG.info("CAMAMILLA DWRRManager despres de processar time="+now());      // TODO TODO log
+                  long end = now();
+                  long elapsed = (end-ini)*1000;
+                  long throughput = (elapsed == 0 ? -1 : quantumSize/elapsed);
+                  LOG.info("CAMAMILLA DWRRManager despres de processar time="+end+" throughput="+throughput);      // TODO TODO log
                 } catch (Exception e) {
                   LOG.info("CAMAMILLA " + request.getClassId() + " Thread DWRRManager peta " + e);        // TODO TODO log
                 }
