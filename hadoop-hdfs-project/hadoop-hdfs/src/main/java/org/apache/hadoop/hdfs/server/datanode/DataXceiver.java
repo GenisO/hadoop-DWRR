@@ -106,6 +106,8 @@ class DataXceiver extends Receiver implements Runnable {
   private long opStartTime; //the start time of receiving an Op
   private final InputStream socketIn;
   private OutputStream socketOut;
+  private ControlGroup cgroup;
+  private boolean isCgroupManaged;
 
   /**
    * Client Name used in previous operation. Not available on first request
@@ -130,6 +132,9 @@ class DataXceiver extends Receiver implements Runnable {
     this.connectToDnViaHostname = datanode.getDnConf().connectToDnViaHostname;
     remoteAddress = peer.getRemoteAddressString();
     localAddress = peer.getLocalAddressString();
+
+    this.isCgroupManaged = this.dataXceiverServer.isCgroupManaged();
+    this.cgroup = new ControlGroup.BlkIOControlGroup();
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("Number of active connections is: "
@@ -469,6 +474,19 @@ class DataXceiver extends Receiver implements Runnable {
       final long length,
       final boolean sendChecksum,
       final CachingStrategy cachingStrategy) throws IOException {
+
+    // If IO is managed by cgroups, move the current thread to the corresponding class group
+    if (this.isCgroupManaged) {
+      // Move process to corresponding cgroup
+      String path = cgroup.createSubDirectory(String.valueOf(block.getClassId()));
+      ControlGroup group = new ControlGroup.BlkIOControlGroup(path);
+      long tid = Thread.currentThread().getId();
+      group.addTaskToGroup(String.valueOf(tid));
+      float weight = this.dataXceiverServer.getClassWeight(block.getClassId());
+      long weight_l = (long) (weight * 1000000000);
+      group.setLongParameter(ControlGroup.BlkIOControlGroup.IO_WEIGHT, weight_l);
+    }
+
     previousOpClientName = clientName;
 
     OutputStream baseStream = getOutputStream();

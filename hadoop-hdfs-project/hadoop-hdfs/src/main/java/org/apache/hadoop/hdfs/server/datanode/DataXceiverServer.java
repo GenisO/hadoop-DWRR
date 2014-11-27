@@ -24,6 +24,10 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.net.Peer;
 import org.apache.hadoop.hdfs.net.PeerServer;
 import org.apache.hadoop.hdfs.protocol.datatransfer.DWRRManager;
+import org.apache.hadoop.hdfs.protocol.datatransfer.RequestObjectDWRR;
+import org.apache.hadoop.hdfs.protocol.datatransfer.WeightQueueDWRR;
+import org.apache.hadoop.hdfs.server.namenode.ByteUtils;
+import org.apache.hadoop.hdfs.server.namenode.FairIOControllerDWRR;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.util.DataTransferThrottler;
 import org.apache.hadoop.io.IOUtils;
@@ -33,6 +37,8 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -51,6 +57,8 @@ public class DataXceiverServer implements Runnable {
   private final boolean shedulerDWRR;
   private DFSClientDWRR dfs;
   private boolean closed = false;
+  private Map<Long, Float> allRequestMap;
+  private boolean isCgroupManaged;
   
   /**
    * Maximal number of concurrent xceivers per node.
@@ -133,6 +141,11 @@ public class DataXceiverServer implements Runnable {
         conf.getInt(DFSConfigKeys.DFS_DATANODE_BALANCE_MAX_NUM_CONCURRENT_MOVES_KEY,
             DFSConfigKeys.DFS_DATANODE_BALANCE_MAX_NUM_CONCURRENT_MOVES_DEFAULT));
 		this.shedulerDWRR = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_MODE_KEY, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_DEFAULT);
+
+    //cache of the class weights
+    this.allRequestMap = new ConcurrentHashMap<Long, Float>();
+    this.isCgroupManaged = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_MODE_KEY, false);
+
     try {
       this.dfs = new DFSClientDWRR(NameNode.getAddress(conf), conf);
       this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
@@ -267,6 +280,37 @@ public class DataXceiverServer implements Runnable {
     }
     peers.clear();
   }
+
+  synchronized boolean isCgroupManaged() {
+    return this.isCgroupManaged;
+  }
+
+  synchronized float getClassWeight(long classId) {
+    if (this.allRequestMap.containsKey(classId))
+      return this.allRequestMap.get(classId);
+
+    Map<String, byte[]> xattr = null;
+    float weight;
+    try {
+      xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
+
+      if (xattr == null) {
+        LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
+        weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+      } else {
+        LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
+        weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
+      }
+    } catch (IOException e) {
+      LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
+      weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+    }
+
+    allRequestMap.put(classId, weight);
+    return weight;
+  }
+
+//  synchronized DFSClientDWRR getDFSClient() { return this.dfs; }
 
   // Return the number of peers.
   synchronized int getNumPeers() {
