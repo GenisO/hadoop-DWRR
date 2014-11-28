@@ -286,28 +286,32 @@ public class DataXceiverServer implements Runnable {
   }
 
   synchronized float getClassWeight(long classId) {
-    if (this.allRequestMap.containsKey(classId))
-      return this.allRequestMap.get(classId);
+    if (!this.allRequestMap.containsKey(classId)) {
+      Map<String, byte[]> xattr = null;
+      float weight;
+      try {
+        xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
 
-    Map<String, byte[]> xattr = null;
-    float weight;
-    try {
-      xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
-
-      if (xattr == null) {
-        LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
+        if (xattr == null) {
+          LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
+          weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+        } else {
+          LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
+          weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
+        }
+      } catch (IOException e) {
+        LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
         weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
-      } else {
-        LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
-        weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
       }
-    } catch (IOException e) {
-      LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
-      weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+      allRequestMap.put(classId, weight);
     }
-
-    allRequestMap.put(classId, weight);
-    return weight;
+    float _weight = this.allRequestMap.get(classId);
+    float sum_weights = 0.0;
+    for (weight : this.allRequestMap.values()) {
+      sum_weights += weight;
+    }
+    _weight = (_weight/sum_weights) * 1000.0;
+    return _weight;
   }
 
 //  synchronized DFSClientDWRR getDFSClient() { return this.dfs; }

@@ -482,11 +482,11 @@ class DataXceiver extends Receiver implements Runnable {
       // Move process to corresponding cgroup
       String path = cgroup.createSubDirectory(String.valueOf(block.getClassId()));
       ControlGroup group = new ControlGroup.BlkIOControlGroup(path);
-      long tid = Thread.currentThread().getId();
+      //long tid = Thread.currentThread().getId();
+      long tid = (long)ControlGroup.LinuxHelper.gettid();
       group.addTaskToGroup(String.valueOf(tid));
-      float weight = this.dataXceiverServer.getClassWeight(block.getClassId());
-      long weight_l = (long) (weight * 1000000000);
-      group.setLongParameter(ControlGroup.BlkIOControlGroup.IO_WEIGHT, weight_l);
+      long weight = (long)this.dataXceiverServer.getClassWeight(block.getClassId());
+      group.setLongParameter(ControlGroup.BlkIOControlGroup.IO_WEIGHT, weight);
     }
 
     previousOpClientName = clientName;
