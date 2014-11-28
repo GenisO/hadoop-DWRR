@@ -140,6 +140,7 @@ class DataXceiver extends Receiver implements Runnable {
       LOG.debug("Number of active connections is: "
           + datanode.getXceiverCount());
     }
+    LOG.info("CAMAMILLA DataXceiver.constructor time="+now());      // TODO TODO log
   }
 
   /**
@@ -174,6 +175,7 @@ class DataXceiver extends Receiver implements Runnable {
   public void run() {
     int opsProcessed = 0;
     Op op = null;
+    LOG.info("CAMAMILLA DataXceiver.run time="+now());      // TODO TODO log
 
     try {
       dataXceiverServer.addPeer(peer, Thread.currentThread());

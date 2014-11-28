@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.protocol.datatransfer;
 
 import static org.apache.hadoop.hdfs.protocol.datatransfer.DataTransferProtoUtil.fromProto;
 import static org.apache.hadoop.hdfs.protocolPB.PBHelper.vintPrefixed;
+import static org.apache.hadoop.util.Time.now;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -106,6 +107,7 @@ public abstract class Receiver implements DataTransferProtocol {
 
   /** Receive OP_READ_BLOCK */
   private void opReadBlock() throws IOException {
+    LOG.info("CAMAMILLA DataXceiver.opReadBlock init time="+now());      // TODO TODO log
     OpReadBlockProto proto = OpReadBlockProto.parseFrom(vintPrefixed(in));
     readBlock(PBHelper.convert(proto.getHeader().getBaseHeader().getBlock()),
         PBHelper.convert(proto.getHeader().getBaseHeader().getToken()),
@@ -116,10 +118,12 @@ public abstract class Receiver implements DataTransferProtocol {
         (proto.hasCachingStrategy() ?
             getCachingStrategy(proto.getCachingStrategy()) :
           CachingStrategy.newDefaultStrategy()));
+    LOG.info("CAMAMILLA DataXceiver.opReadBlock end time="+now());      // TODO TODO log
   }
   
   /** Receive OP_WRITE_BLOCK */
   private void opWriteBlock(DataInputStream in) throws IOException {
+    LOG.info("CAMAMILLA DataXceiver.opWriteBlock init time="+now());      // TODO TODO log
     final OpWriteBlockProto proto = OpWriteBlockProto.parseFrom(vintPrefixed(in));
     writeBlock(PBHelper.convert(proto.getHeader().getBaseHeader().getBlock()),
         PBHelper.convert(proto.getHeader().getBaseHeader().getToken()),
@@ -134,6 +138,7 @@ public abstract class Receiver implements DataTransferProtocol {
         (proto.hasCachingStrategy() ?
             getCachingStrategy(proto.getCachingStrategy()) :
           CachingStrategy.newDefaultStrategy()));
+    LOG.info("CAMAMILLA DataXceiver.opWriteBlock end time="+now());      // TODO TODO log
   }
 
   /** Receive {@link Op#TRANSFER_BLOCK} */
