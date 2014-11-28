@@ -29,7 +29,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.sun.jna.*;
+import com.sun.jna.LastErrorException;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
 
 /**
  * An interface of Linux control groups through a cgroup virtual file system.
