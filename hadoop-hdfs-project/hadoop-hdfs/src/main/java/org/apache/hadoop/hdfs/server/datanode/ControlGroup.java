@@ -29,6 +29,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.sun.jna.*;
+
 /**
  * An interface of Linux control groups through a cgroup virtual file system.
  * A root privilege is not required to manage a control group as long as
@@ -36,6 +38,38 @@ import org.apache.commons.logging.LogFactory;
  */
 public abstract class ControlGroup {
     private static Log LOG = LogFactory.getLog(ControlGroup.class);
+
+    /**
+     * A helper
+     */
+    public static class LinuxHelper {
+        private static final String LIBRARY_NAME = "c";
+
+        interface CLibrary extends Library {
+            static final CLibrary INSTANCE = (CLibrary) Native.loadLibrary(LIBRARY_NAME, CLibrary.class);
+
+            int syscall(int number, Object... args) throws LastErrorException;
+        }
+
+        public static int gettid() {
+            int SYS_gettid = Platform.is64Bit() ? 186 : 224;
+            Object[] NO_ARGS = {};
+            return LinuxHelper.syscall(SYS_gettid, NO_ARGS);
+        }
+
+        public static int syscall(int number, Object... args) {
+            final CLibrary lib = CLibrary.INSTANCE;
+            try {
+                final int ret = lib.syscall(number, args);
+                if (ret < 0) {
+                    throw new IllegalStateException("syscall("+number+") failed; errno=" + Native.getLastError());
+                }
+                return ret;
+            } catch (LastErrorException e) {
+                throw new IllegalStateException("syscall("+number+") failed; errno=" + e.getErrorCode(), e);
+            }
+        }
+    }
 
     /**
      * An interface to a memory sub-system of Linux control groups. To use a
