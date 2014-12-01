@@ -287,8 +287,8 @@ public class DataXceiverServer implements Runnable {
 
   synchronized float getClassWeight(long classId) {
     if (!this.allRequestMap.containsKey(classId)) {
-      Map<String, byte[]> xattr = null;
       float weight;
+      Map<String, byte[]> xattr = null;
       try {
         xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
 
@@ -306,11 +306,11 @@ public class DataXceiverServer implements Runnable {
       allRequestMap.put(classId, weight);
     }
     float _weight = this.allRequestMap.get(classId);
-    float sum_weights = 0.0;
-    for (weight : this.allRequestMap.values()) {
+    float sum_weights = 0.0F;
+    for (float weight : this.allRequestMap.values()) {
       sum_weights += weight;
     }
-    _weight = (_weight/sum_weights) * 1000.0;
+    _weight = (_weight/sum_weights) * 1000.0F;
     return _weight;
   }
 
