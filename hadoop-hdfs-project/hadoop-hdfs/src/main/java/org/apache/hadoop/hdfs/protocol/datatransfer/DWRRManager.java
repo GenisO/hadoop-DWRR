@@ -3,7 +3,6 @@ package org.apache.hadoop.hdfs.protocol.datatransfer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.XAttr;
 import org.apache.hadoop.hdfs.DFSClientDWRR;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;

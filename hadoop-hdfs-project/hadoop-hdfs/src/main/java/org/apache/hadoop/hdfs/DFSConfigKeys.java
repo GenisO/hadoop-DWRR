@@ -632,10 +632,12 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
 	// TODO TODO conf de fitxer
 	public static final String DFS_DATANODE_XCEIVER_DWRR_CGROUPS_MODE_KEY = "dfs.datanode.xceiver.dwrr.cgroups";
-	public static final boolean DFS_DATANODE_XCEIVER_DWRR_CGROUPS = false;
+	public static final boolean DFS_DATANODE_XCEIVER_DWRR_CGROUPS_DEFAULT = false;
 
   public static final String DFS_DATANODE_XCEIVER_DWRR_MODE_KEY = "dfs.datanode.xceiver.dwrr";
   public static final boolean DFS_DATANODE_XCEIVER_DWRR_DEFAULT = false;
+
+  public static final String DFS_DATANODE_XCEIVER_DWRR_MODE_CONCURRENT_KEY = "dfs.datanode.xceiver.dwrr.concurrent";
 
 	public static final String DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE = "dfs.datanode.xceiver.dwrr.quantumsize";
 	public static final long DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE_DEFAULT = DFS_BLOCK_SIZE_DEFAULT;

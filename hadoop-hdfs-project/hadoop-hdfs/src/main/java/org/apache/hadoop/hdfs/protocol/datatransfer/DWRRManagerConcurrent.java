@@ -12,16 +12,19 @@ import org.apache.hadoop.hdfs.server.namenode.FairIOControllerDWRR;
 import org.apache.hadoop.util.Daemon;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedTransferQueue;
 
 import static org.apache.hadoop.util.Time.now;
 
 /**
  * Created by DEIM on 28/07/14.
  */
-public class DWRRManagerConcurrent {
+public class DWRRManagerConcurrent extends DWRRManager {
   public static final Log LOG = LogFactory.getLog(DWRRManagerConcurrent.class);
   public static final String nameWeight = "weight";
   private DataNode datanode;
@@ -43,8 +46,9 @@ public class DWRRManagerConcurrent {
       public void run() {
         while (true) {
 
-          while (allRequestsQueue.size() > 0) {
-            WeightQueueDWRR<RequestObjectDWRR> queue = allRequestsQueue.peek();
+          WeightQueueDWRRConcurrent<RequestObjectDWRR> queue = null;
+          try {
+            queue = allRequestsQueue.take();
             LOG.info("CAMAMILLA while process requests is new round for " + queue.getClassId());        // TODO TODO log
             datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
 
@@ -90,7 +94,7 @@ public class DWRRManagerConcurrent {
                 if (queue.numPendingRequests() == 0) {      // cua servida
                   LOG.info("CAMAMILLA while process numPendingRequests = 0");        // TODO TODO log
                   queue.setDeficitCounter(0F);
-                  allRequestsQueue.poll();
+                  //allRequestsQueue.poll();
                   processedNumQueues++;
                   datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
                   LOG.info("CAMAMILLA " + numQueues + " cua " + queue.getClassId() + " buida " + " amb peticions servides= " + queue.getProcessedRequests());        // TODO TODO log
@@ -115,7 +119,7 @@ public class DWRRManagerConcurrent {
                 }
               } else {      // Augmentar deficitCounter i encuar i mirar seguent cua
                 LOG.info("CAMAMILLA while process Augmentar deficitCounter");        // TODO TODO log
-                allRequestsQueue.poll();
+                //allRequestsQueue.poll();
 
                 LOG.info("CAMAMILLA while process encara te peticions, tornar a encuar");        // TODO TODO log
                 allRequestsQueue.add(queue);
@@ -125,7 +129,7 @@ public class DWRRManagerConcurrent {
 
               LOG.info("CAMAMILLA INI print");          // TODO TODO log
               for (long key : allRequestMap.keySet()) {
-                WeightQueueDWRR<RequestObjectDWRR> queueAux = allRequestMap.get(key);
+                WeightQueueDWRRConcurrent<RequestObjectDWRR> queueAux = allRequestMap.get(key);
                 LOG.info(now() + "CAMAMILLA " + queueAux.toString());          // TODO TODO log
               }
               String weights = "";
@@ -135,19 +139,22 @@ public class DWRRManagerConcurrent {
               LOG.info("CAMAMILLA DWRRManager.Thread run pesos son {" + weights + "}");      // TODO TODO log
               LOG.info("CAMAMILLA END print");          // TODO TODO log
             }
+          } catch (InterruptedException e) {
+            LOG.error("CAMAMILLA DWRRManagerConcurrent ", e);
           }
         }
       }
     });
   private Comparator<Float> maxComparator = Collections.reverseOrder();
-  private Map<Long, WeightQueueDWRR<RequestObjectDWRR>> allRequestMap;
-  private Queue<WeightQueueDWRR<RequestObjectDWRR>> allRequestsQueue;
+  private ConcurrentHashMap<Long, WeightQueueDWRRConcurrent<RequestObjectDWRR>> allRequestMap;
+  private LinkedTransferQueue<WeightQueueDWRRConcurrent<RequestObjectDWRR>> allRequestsQueue;
 
   // TODO TODO fer que totes les classes propies que siguin modificacio duna altra de hadoop siguin per herencia, aixi afavorim la reutilitzacio de codi
   public DWRRManagerConcurrent(Configuration conf, DFSClientDWRR dfs, DataNode datanode) {
+    super();
     this.conf = conf;
-    this.allRequestsQueue = new ConcurrentLinkedQueue<WeightQueueDWRR<RequestObjectDWRR>>();
-    this.allRequestMap = new ConcurrentHashMap<Long, WeightQueueDWRR<RequestObjectDWRR>>();
+    this.allRequestsQueue = new LinkedTransferQueue<WeightQueueDWRRConcurrent<RequestObjectDWRR>>();
+    this.allRequestMap = new ConcurrentHashMap<Long, WeightQueueDWRRConcurrent<RequestObjectDWRR>>();
     this.quantumSize = conf.getLong(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE_DEFAULT);
     this.weigthedFairShare = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_WEIGTHED_FAIR_SHARE, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_WEIGTHED_FAIR_SHARE_DEFAULT);
     this.numQueues = 0;
@@ -173,8 +180,8 @@ public class DWRRManagerConcurrent {
    * E					poll(long timeout, TimeUnit unit)			Retrieves and removes the head of this queue, waiting up to the specified wait time if necessary for an element to become available.
    */
   public void addOp(RequestObjectDWRR rec, long classId) {
-    synchronized (lock) {
-      WeightQueueDWRR<RequestObjectDWRR> currentRequestQueue;
+    //synchronized (lock) {
+      WeightQueueDWRRConcurrent<RequestObjectDWRR> currentRequestQueue;
 
       if (allRequestMap.get(classId) == null) {
         LOG.info("CAMAMILLA addop " + classId + " no al map");      // TODO TODO log
@@ -196,7 +203,7 @@ public class DWRRManagerConcurrent {
           weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
         }
 
-        currentRequestQueue = new WeightQueueDWRR<RequestObjectDWRR>(classId, weight, System.currentTimeMillis());
+        currentRequestQueue = new WeightQueueDWRRConcurrent<RequestObjectDWRR>(classId, weight, System.currentTimeMillis());
         allRequestMap.put(classId, currentRequestQueue);
       } else {
         LOG.info("CAMAMILLA addop " + classId + " al map");      // TODO TODO log
@@ -220,8 +227,8 @@ public class DWRRManagerConcurrent {
       }
 
       LOG.info("CAMAMILLA peticio " + classId + " encuada amb pes " + currentRequestQueue.getWeight() + ". Quantes peticions te: " + currentRequestQueue.size());      // TODO TODO log
-      lock.notify();
-    }
+      //lock.notify();
+    //}
   }
 
 }

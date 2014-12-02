@@ -74,6 +74,8 @@
               <element id="module-output" name="hadoop-hdfs" />
             </element>
             <element id="library" level="project" name="Maven: commons-daemon:commons-daemon:1.0.13" />
+            <element id="library" level="project" name="Maven: net.java.dev.jna:jna:4.1.0" />
+            <element id="library" level="project" name="Maven: net.java.dev.jna:jna-platform:4.1.0" />
           </element>
         </element>
         <element id="javaee-facet-resources" facet="hadoop-hdfs-httpfs/web/Web" />
@@ -1067,6 +1069,28 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jets3t/jets3t/0.9.0/jets3t-0.9.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.java.dev.jna:jna-platform:4.1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna-platform/4.1.0/jna-platform-4.1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna-platform/4.1.0/jna-platform-4.1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna-platform/4.1.0/jna-platform-4.1.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Maven: net.java.dev.jna:jna:4.1.0">
+      <CLASSES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna/4.1.0/jna-4.1.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna/4.1.0/jna-4.1.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna/4.1.0/jna-4.1.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Maven: net.sf.ehcache:ehcache-core:2.4.4">

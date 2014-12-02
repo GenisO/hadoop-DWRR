@@ -24,8 +24,6 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.net.Peer;
 import org.apache.hadoop.hdfs.net.PeerServer;
 import org.apache.hadoop.hdfs.protocol.datatransfer.DWRRManager;
-import org.apache.hadoop.hdfs.protocol.datatransfer.RequestObjectDWRR;
-import org.apache.hadoop.hdfs.protocol.datatransfer.WeightQueueDWRR;
 import org.apache.hadoop.hdfs.server.namenode.ByteUtils;
 import org.apache.hadoop.hdfs.server.namenode.FairIOControllerDWRR;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
@@ -53,6 +51,7 @@ public class DataXceiverServer implements Runnable {
   private final PeerServer peerServer;
   private final DataNode datanode;
   private final HashMap<Peer, Thread> peers = new HashMap<Peer, Thread>();
+  private final boolean concurrentDWRR;
   private DWRRManager dwrrmanager;
   private final boolean shedulerDWRR;
   private DFSClientDWRR dfs;
@@ -141,14 +140,20 @@ public class DataXceiverServer implements Runnable {
         conf.getInt(DFSConfigKeys.DFS_DATANODE_BALANCE_MAX_NUM_CONCURRENT_MOVES_KEY,
             DFSConfigKeys.DFS_DATANODE_BALANCE_MAX_NUM_CONCURRENT_MOVES_DEFAULT));
 		this.shedulerDWRR = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_MODE_KEY, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_DEFAULT);
+    this.concurrentDWRR = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_MODE_CONCURRENT_KEY, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_DEFAULT);
 
+    LOG.info("CAMAMILLA DWRR?="+shedulerDWRR+" new concurrent version?="+concurrentDWRR);
     //cache of the class weights
     this.allRequestMap = new ConcurrentHashMap<Long, Float>();
-    this.isCgroupManaged = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_MODE_KEY, false);
+    this.isCgroupManaged = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_MODE_KEY, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_DEFAULT);
 
     try {
       this.dfs = new DFSClientDWRR(NameNode.getAddress(conf), conf);
-      this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
+      if (concurrentDWRR) {
+        this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
+      } else {
+        this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
+      }
     } catch (IOException e) {
       LOG.error("CAMAMILLA DataXceiverDWRR error dfs "+e.getMessage());      // TODO TODO log
       e.printStackTrace();
