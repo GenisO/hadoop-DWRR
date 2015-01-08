@@ -3,12 +3,12 @@ package org.apache.hadoop.hdfs.protocol.datatransfer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSClientDWRR;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.FairIODFSClient;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
-import org.apache.hadoop.hdfs.server.datanode.DataXceiverDWRR;
+import org.apache.hadoop.hdfs.server.datanode.FairIODataXceiver;
 import org.apache.hadoop.hdfs.server.namenode.ByteUtils;
-import org.apache.hadoop.hdfs.server.namenode.FairIOControllerDWRR;
+import org.apache.hadoop.hdfs.server.namenode.FairIOController;
 import org.apache.hadoop.util.Daemon;
 
 import java.io.IOException;
@@ -21,11 +21,11 @@ import static org.apache.hadoop.util.Time.now;
 /**
  * Created by DEIM on 28/07/14.
  */
-public class DWRRManager {
-  public static final Log LOG = LogFactory.getLog(DWRRManager.class);
+public class FairIOFlowManager {
+  public static final Log LOG = LogFactory.getLog(FairIOFlowManager.class);
   public static final String nameWeight = "weight";
   private DataNode datanode;
-  private DFSClientDWRR dfs;
+  private FairIODFSClient dfs;
   private Object lock = new Object();
   private Configuration conf;
   private int numQueues;
@@ -33,7 +33,7 @@ public class DWRRManager {
   private long quantumSize;
   private boolean weigthedFairShare;
   private boolean enoughDeficitCounter;
-  private Daemon threadedDWRR = new Daemon(new ThreadGroup("DWRR Thread"),
+  private Daemon threadedDWRR = new Daemon(new ThreadGroup("FairIO Thread"),
     new Runnable() {
       public final Log LOG = LogFactory.getLog(Daemon.class);
 
@@ -53,7 +53,7 @@ public class DWRRManager {
 
 
           while (allRequestsQueue.size() > 0) {
-            WeightQueueDWRR<RequestObjectDWRR> queue = allRequestsQueue.peek();
+            FairIOWeightQueue<FairIOFlowRequestObject> queue = allRequestsQueue.peek();
             LOG.info("CAMAMILLA while process requests is new round for " + queue.getClassId());        // TODO TODO log
             datanode.getMetrics().setQueuedRequests("" + queue.getClassId(), queue.getQueuedRequests());
 
@@ -69,7 +69,7 @@ public class DWRRManager {
             enoughDeficitCounter = true;
 
             while (enoughDeficitCounter && queue.size() > 0) {
-              RequestObjectDWRR request = queue.peek();
+              FairIOFlowRequestObject request = queue.peek();
 
               long requestSize = request.getSize();
               LOG.info("CAMAMILLA while queda prou deficitCounter? " +requestSize+" <= " +queueDeficitCounter+" ?");        // TODO TODO log
@@ -79,15 +79,15 @@ public class DWRRManager {
 
                 LOG.info("CAMAMILLA " + request.getClassId() + " Thread processar peticio " + request.getOp());        // TODO TODO log
                 try {
-                  DataXceiverDWRR dXc = request.getdXc();
+                  FairIODataXceiver dXc = request.getdXc();
                   long ini = now();
                   dXc.makeOp(request.getOp());
                   long end = now();
                   long elapsed = (end-ini)*1000;
                   long throughput = (elapsed == 0 ? -1 : quantumSize/elapsed);
-                  LOG.info("CAMAMILLA DWRRManager despres de processar time="+end+" throughput="+throughput);      // TODO TODO log
+                  LOG.info("CAMAMILLA FairIOFlowManager despres de processar time="+end+" throughput="+throughput);      // TODO TODO log
                 } catch (Exception e) {
-                  LOG.info("CAMAMILLA " + request.getClassId() + " Thread DWRRManager peta " + e);        // TODO TODO log
+                  LOG.info("CAMAMILLA " + request.getClassId() + " Thread FairIOFlowManager peta " + e);        // TODO TODO log
                 }
 
                 queue.updateProcessedRequests();
@@ -109,7 +109,7 @@ public class DWRRManager {
                       weights+=" "+weight;
                     }
 
-                    LOG.info("CAMAMILLA DWRRManager.addOp pesos abans deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
+                    LOG.info("CAMAMILLA FairIOFlowManager.addOp pesos abans deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
 
                     currentActiveWeights.remove(queue.getWeight());
 
@@ -118,7 +118,7 @@ public class DWRRManager {
                       weights+=" "+weight;
                     }
 
-                    LOG.info("CAMAMILLA DWRRManager.addOp pesos despres deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
+                    LOG.info("CAMAMILLA FairIOFlowManager.addOp pesos despres deliminar "+queue.getWeight()+" son {"+weights+"}");      // TODO TODO log
 
                     numQueues--;
                     enoughDeficitCounter = false;
@@ -138,14 +138,14 @@ public class DWRRManager {
 
               LOG.info("CAMAMILLA INI print");          // TODO TODO log
               for (long key : allRequestMap.keySet()) {
-                WeightQueueDWRR<RequestObjectDWRR> queueAux = allRequestMap.get(key);
+                FairIOWeightQueue<FairIOFlowRequestObject> queueAux = allRequestMap.get(key);
                 LOG.info(now() + "CAMAMILLA " + queueAux.toString());          // TODO TODO log
               }
               String weights = "";
               for (float weight : currentActiveWeights) {
                 weights+=" "+weight;
               }
-              LOG.info("CAMAMILLA DWRRManager.Thread run pesos son {"+weights+"}");      // TODO TODO log
+              LOG.info("CAMAMILLA FairIOFlowManager.Thread run pesos son {"+weights+"}");      // TODO TODO log
               LOG.info("CAMAMILLA END print");          // TODO TODO log
             }
           }
@@ -160,14 +160,14 @@ public class DWRRManager {
   private int Ninit = 7;
   private PriorityQueue<Float> currentActiveWeights;
   private Comparator<Float> maxComparator = Collections.reverseOrder();
-  private Map<Long, WeightQueueDWRR<RequestObjectDWRR>> allRequestMap;
-  private Queue<WeightQueueDWRR<RequestObjectDWRR>> allRequestsQueue;
+  private Map<Long, FairIOWeightQueue<FairIOFlowRequestObject>> allRequestMap;
+  private Queue<FairIOWeightQueue<FairIOFlowRequestObject>> allRequestsQueue;
 
   // TODO TODO fer que totes les classes propies que siguin modificacio duna altra de hadoop siguin per herencia, aixi afavorim la reutilitzacio de codi
-  public DWRRManager(Configuration conf, DFSClientDWRR dfs, DataNode datanode) {
+  public FairIOFlowManager(Configuration conf, FairIODFSClient dfs, DataNode datanode) {
     this.conf = conf;
-    this.allRequestsQueue = new ConcurrentLinkedQueue<WeightQueueDWRR<RequestObjectDWRR>>();
-    this.allRequestMap = new ConcurrentHashMap<Long, WeightQueueDWRR<RequestObjectDWRR>>();
+    this.allRequestsQueue = new ConcurrentLinkedQueue<FairIOWeightQueue<FairIOFlowRequestObject>>();
+    this.allRequestMap = new ConcurrentHashMap<Long, FairIOWeightQueue<FairIOFlowRequestObject>>();
     this.quantumSize = conf.getLong(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_QUANTUM_SIZE_DEFAULT);
     this.weigthedFairShare = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_WEIGTHED_FAIR_SHARE, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_WEIGTHED_FAIR_SHARE_DEFAULT);
     this.numQueues = 0;
@@ -188,9 +188,9 @@ public class DWRRManager {
    * E					poll()			Retrieves and removes the head of this queue, or returns null if this queue is empty.
    * E					poll(long timeout, TimeUnit unit)			Retrieves and removes the head of this queue, waiting up to the specified wait time if necessary for an element to become available.
    */
-  public void addOp(RequestObjectDWRR rec, long classId) {
+  public void addOp(FairIOFlowRequestObject rec, long classId) {
     synchronized (lock) {
-      WeightQueueDWRR<RequestObjectDWRR> currentRequestQueue;
+      FairIOWeightQueue<FairIOFlowRequestObject> currentRequestQueue;
 
       if (allRequestMap.get(classId) == null) {
         LOG.info("CAMAMILLA addop " + classId + " no al map");      // TODO TODO log
@@ -201,18 +201,18 @@ public class DWRRManager {
           xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
 
           if (xattr == null) {
-            LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
-            weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+            LOG.error("CAMAMILLA FairIODataXceiver.opReadBlock.list no te atribut weight");      // TODO TODO log
+            weight = FairIOController.DEFAULT_WEIGHT;
           } else {
-            LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
-            weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
+            LOG.info("CAMAMILLA FairIODataXceiver.opReadBlock.list fer el get de user." + FairIOFlowManager.nameWeight);      // TODO TODO log
+            weight = ByteUtils.bytesToFloat(xattr.get("user." + FairIOFlowManager.nameWeight));
           }
         } catch (IOException e) {
-          LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
-          weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+          LOG.error("CAMAMILLA FairIODataXceiver.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
+          weight = FairIOController.DEFAULT_WEIGHT;
         }
 
-        currentRequestQueue = new WeightQueueDWRR<RequestObjectDWRR>(classId, weight, System.currentTimeMillis());
+        currentRequestQueue = new FairIOWeightQueue<FairIOFlowRequestObject>(classId, weight, System.currentTimeMillis());
         allRequestMap.put(classId, currentRequestQueue);
       } else {
         LOG.info("CAMAMILLA addop " + classId + " al map");      // TODO TODO log
@@ -230,7 +230,7 @@ public class DWRRManager {
           weights+=" "+weight;
         }
 
-        LOG.info("CAMAMILLA DWRRManager.addOp pesos despres dafegir "+currentRequestQueue.getWeight()+" son {"+weights+"}");      // TODO TODO log
+        LOG.info("CAMAMILLA FairIOFlowManager.addOp pesos despres dafegir "+currentRequestQueue.getWeight()+" son {"+weights+"}");      // TODO TODO log
 
         numQueues++;
       }

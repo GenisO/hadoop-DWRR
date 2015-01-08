@@ -19,13 +19,13 @@ package org.apache.hadoop.hdfs.server.datanode;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSClientDWRR;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.FairIODFSClient;
 import org.apache.hadoop.hdfs.net.Peer;
 import org.apache.hadoop.hdfs.net.PeerServer;
-import org.apache.hadoop.hdfs.protocol.datatransfer.DWRRManager;
+import org.apache.hadoop.hdfs.protocol.datatransfer.FairIOFlowManager;
 import org.apache.hadoop.hdfs.server.namenode.ByteUtils;
-import org.apache.hadoop.hdfs.server.namenode.FairIOControllerDWRR;
+import org.apache.hadoop.hdfs.server.namenode.FairIOController;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.util.DataTransferThrottler;
 import org.apache.hadoop.io.IOUtils;
@@ -52,9 +52,9 @@ public class DataXceiverServer implements Runnable {
   private final DataNode datanode;
   private final HashMap<Peer, Thread> peers = new HashMap<Peer, Thread>();
   private final boolean concurrentDWRR;
-  private DWRRManager dwrrmanager;
+  private FairIOFlowManager fairIOFlowManager;
   private final boolean shedulerDWRR;
-  private DFSClientDWRR dfs;
+  private FairIODFSClient dfs;
   private boolean closed = false;
   private Map<Long, Float> allRequestMap;
   private boolean isCgroupManaged;
@@ -148,14 +148,14 @@ public class DataXceiverServer implements Runnable {
     this.isCgroupManaged = conf.getBoolean(DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_MODE_KEY, DFSConfigKeys.DFS_DATANODE_XCEIVER_DWRR_CGROUPS_DEFAULT);
 
     try {
-      this.dfs = new DFSClientDWRR(NameNode.getAddress(conf), conf);
+      this.dfs = new FairIODFSClient(NameNode.getAddress(conf), conf);
       if (concurrentDWRR) {
-        this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
+        this.fairIOFlowManager = new FairIOFlowManager(conf, dfs, datanode);
       } else {
-        this.dwrrmanager = new DWRRManager(conf, dfs, datanode);
+        this.fairIOFlowManager = new FairIOFlowManager(conf, dfs, datanode);
       }
     } catch (IOException e) {
-      LOG.error("CAMAMILLA DataXceiverDWRR error dfs "+e.getMessage());      // TODO TODO log
+      LOG.error("CAMAMILLA DataXceiverServer error dfs "+e.getMessage());      // TODO TODO log
       e.printStackTrace();
     }
   }
@@ -177,7 +177,7 @@ public class DataXceiverServer implements Runnable {
 
         if (shedulerDWRR) {     // TODO TODO llançadora de DRWW
 					new Daemon(datanode.threadGroup,
-						DataXceiverDWRR.create(peer, datanode, this, dwrrmanager))
+						FairIODataXceiver.create(peer, datanode, this, fairIOFlowManager))
 						.start();
 				} else {
 					new Daemon(datanode.threadGroup,
@@ -298,15 +298,15 @@ public class DataXceiverServer implements Runnable {
         xattr = dfs.getXAttrs(classId, datanode.getDatanodeId().getDatanodeUuid());
 
         if (xattr == null) {
-          LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list no te atribut weight");      // TODO TODO log
-          weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+          LOG.error("CAMAMILLA DataXceiverServer.opReadBlock.list no te atribut weight");      // TODO TODO log
+          weight = FairIOController.DEFAULT_WEIGHT;
         } else {
-          LOG.info("CAMAMILLA DataXceiverDWRR.opReadBlock.list fer el get de user." + DWRRManager.nameWeight);      // TODO TODO log
-          weight = ByteUtils.bytesToFloat(xattr.get("user." + DWRRManager.nameWeight));
+          LOG.info("CAMAMILLA DataXceiverServer.opReadBlock.list fer el get de user." + FairIOFlowManager.nameWeight);      // TODO TODO log
+          weight = ByteUtils.bytesToFloat(xattr.get("user." + FairIOFlowManager.nameWeight));
         }
       } catch (IOException e) {
-        LOG.error("CAMAMILLA DataXceiverDWRR.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
-        weight = FairIOControllerDWRR.DEFAULT_WEIGHT;
+        LOG.error("CAMAMILLA DataXceiverServer.opReadBlock.list ERROR al getXattr " + e.getMessage());      // TODO TODO log
+        weight = FairIOController.DEFAULT_WEIGHT;
       }
       allRequestMap.put(classId, weight);
     }
@@ -319,7 +319,7 @@ public class DataXceiverServer implements Runnable {
     return _weight;
   }
 
-//  synchronized DFSClientDWRR getDFSClient() { return this.dfs; }
+//  synchronized FairIODFSClient getDFSClient() { return this.dfs; }
 
   // Return the number of peers.
   synchronized int getNumPeers() {

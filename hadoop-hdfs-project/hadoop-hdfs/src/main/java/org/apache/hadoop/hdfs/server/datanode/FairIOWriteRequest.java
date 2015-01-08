@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by DEIM on 8/09/14.
  */
-public class WriteRequestDWRR {
+public class FairIOWriteRequest {
 
   private boolean syncBlock;
   private boolean lastPacketInBlock;
@@ -21,7 +21,7 @@ public class WriteRequestDWRR {
   private int startByteToDisk;
   private int numBytesToDisk;
 
-  public WriteRequestDWRR(byte[] array, int startByteToDisk, int numBytesToDisk, ByteBuffer checksumBuf, byte[] checksumArray, int checksumLen, int len, long offsetInBlock, boolean syncBlock, boolean lastPacketInBlock) {
+  public FairIOWriteRequest(byte[] array, int startByteToDisk, int numBytesToDisk, ByteBuffer checksumBuf, byte[] checksumArray, int checksumLen, int len, long offsetInBlock, boolean syncBlock, boolean lastPacketInBlock) {
     this.array = array;
     this.startByteToDisk = startByteToDisk;
     this.numBytesToDisk = numBytesToDisk;

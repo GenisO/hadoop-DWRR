@@ -1,12 +1,12 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-public class DatanodeIDDWRR implements Comparable<DatanodeIDDWRR> {
+public class FairIODatanodeID implements Comparable<FairIODatanodeID> {
 
 	private static int globalID = 0;
 	
 	public int id;
 	
-	public DatanodeIDDWRR() {
+	public FairIODatanodeID() {
 		this.id = globalID;
 		globalID++;
 	}
@@ -16,7 +16,7 @@ public class DatanodeIDDWRR implements Comparable<DatanodeIDDWRR> {
 	}
 	
 	@Override
-	public int compareTo(DatanodeIDDWRR arg0) {
+	public int compareTo(FairIODatanodeID arg0) {
 		if (this.id < arg0.id) return -1;
 		else if (this.id == arg0.id) return 0;
 		else return 1;

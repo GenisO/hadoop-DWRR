@@ -15,8 +15,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class FairIOControllerDWRR {
-  public static final Log LOG = LogFactory.getLog(FairIOControllerDWRR.class);
+public class FairIOController {
+  public static final Log LOG = LogFactory.getLog(FairIOController.class);
 
   public static final int PRECISSION = 64;
   public static MathContext CONTEXT = new MathContext(PRECISSION);
@@ -33,12 +33,12 @@ public class FairIOControllerDWRR {
   private static final BigDecimal TWO = new BigDecimal(2, CONTEXT);
   public static final float DEFAULT_WEIGHT = 100;
 
-  private Map<ClassInfoDWRR, Set<DatanodeInfoDWRR>> classToDatanodes;
-  private HashMap<Long, ClassInfoDWRR> classInfoMap;
-  private Map<DatanodeID, DatanodeInfoDWRR> nodeIDtoInfo;
-  private MarginalsComparatorDWRR datanodeInfoComparator;
+  private Map<FairIOClassInfo, Set<FairIODatanodeInfo>> classToDatanodes;
+  private HashMap<Long, FairIOClassInfo> classInfoMap;
+  private Map<DatanodeID, FairIODatanodeInfo> nodeIDtoInfo;
+  private FairIOMarginalsComparator datanodeInfoComparator;
   private HashMap<String, DatanodeID> nodeUuidtoNodeID;
-  private Daemon threadedFairDWRR = new Daemon(new ThreadGroup("FairIOControllerDWRR Thread"),
+  private Daemon threadedFairDWRR = new Daemon(new ThreadGroup("FairIOController Thread"),
     new Runnable() {
       public final Log LOG = LogFactory.getLog(Daemon.class);
 
@@ -56,20 +56,19 @@ public class FairIOControllerDWRR {
       }
     });
 
-  public FairIOControllerDWRR() {
-    this.classToDatanodes = new HashMap<ClassInfoDWRR, Set<DatanodeInfoDWRR>>();
-    this.nodeIDtoInfo = new HashMap<DatanodeID, DatanodeInfoDWRR>();
+  public FairIOController() {
+    this.classToDatanodes = new HashMap<FairIOClassInfo, Set<FairIODatanodeInfo>>();
+    this.nodeIDtoInfo = new HashMap<DatanodeID, FairIODatanodeInfo>();
     this.nodeUuidtoNodeID = new HashMap<String, DatanodeID>();
-    this.datanodeInfoComparator = new MarginalsComparatorDWRR();
-    this.classInfoMap = new HashMap<Long, ClassInfoDWRR>();
+    this.datanodeInfoComparator = new FairIOMarginalsComparator();
+    this.classInfoMap = new HashMap<Long, FairIOClassInfo>();
 
-    //this.threadedFairDWRR.start();
   }
 
   // TODO TODO sha daconseguir tambe la capacitat del datanode
   public void registerDatanode(DatanodeID datanodeID) {
     if (!this.nodeUuidtoNodeID.containsKey(datanodeID.getDatanodeUuid())) {
-      DatanodeInfoDWRR datanode = new DatanodeInfoDWRR(datanodeID);
+      FairIODatanodeInfo datanode = new FairIODatanodeInfo(datanodeID);
       this.nodeUuidtoNodeID.put(datanodeID.getDatanodeUuid(), datanodeID);
       this.nodeIDtoInfo.put(datanodeID, datanode);
     }
@@ -77,18 +76,18 @@ public class FairIOControllerDWRR {
   }
 
   public boolean existsClassInfo(long classId) {
-    return this.classToDatanodes.containsKey(new ClassInfoDWRR(classId));
+    return this.classToDatanodes.containsKey(new FairIOClassInfo(classId));
   }
 
   public void setClassWeight(long classId) {
-    setClassWeight(classId, FairIOControllerDWRR.DEFAULT_WEIGHT);
+    setClassWeight(classId, FairIOController.DEFAULT_WEIGHT);
   }
 
   public void setClassWeight(long classId, float weight) {
-    ClassInfoDWRR classInfo = new ClassInfoDWRR(classId, weight);
-    Set<DatanodeInfoDWRR> datanodes = this.classToDatanodes.get(classInfo);
+    FairIOClassInfo classInfo = new FairIOClassInfo(classId, weight);
+    Set<FairIODatanodeInfo> datanodes = this.classToDatanodes.get(classInfo);
     if (datanodes == null)
-      datanodes = new HashSet<DatanodeInfoDWRR>();
+      datanodes = new HashSet<FairIODatanodeInfo>();
     this.classToDatanodes.put(classInfo, datanodes);
     this.classInfoMap.put(classId, classInfo);
 
@@ -100,12 +99,12 @@ public class FairIOControllerDWRR {
 	/* datanodeID should have been previously registered */
 	/* classInfo should have been previously registered */
   public void addDatanodeToClass(long classId, String datanodeUUID) throws Exception {
-    ClassInfoDWRR classInfo = new ClassInfoDWRR(classId);
+    FairIOClassInfo classInfo = new FairIOClassInfo(classId);
     if (!this.nodeUuidtoNodeID.containsKey(datanodeUUID))
       throw new Exception("Node "+datanodeUUID+" not registered");
 
     DatanodeID datanodeID = this.nodeUuidtoNodeID.get(datanodeUUID);
-    DatanodeInfoDWRR datanode = this.nodeIDtoInfo.get(datanodeID);
+    FairIODatanodeInfo datanode = this.nodeIDtoInfo.get(datanodeID);
 
     this.classToDatanodes.get(classInfo).add(datanode);
     computeShares();
@@ -115,11 +114,11 @@ public class FairIOControllerDWRR {
 	 * not interested anymore */
 	/* datanodeID should have been previously registered */
   public void removeDatanodeFromClass(long classId, String datanodeUUID) {
-    ClassInfoDWRR classInfo = new ClassInfoDWRR(classId);
+    FairIOClassInfo classInfo = new FairIOClassInfo(classId);
     if (this.classToDatanodes.containsKey(classInfo)) {
       DatanodeID datanodeID = this.nodeUuidtoNodeID.get(datanodeUUID);
       if (datanodeID != null) {
-        DatanodeInfoDWRR datanode = this.nodeIDtoInfo.get(datanodeID);
+        FairIODatanodeInfo datanode = this.nodeIDtoInfo.get(datanodeID);
         this.classToDatanodes.get(classInfo).remove(datanode);
         datanode.updateClassWeight(classInfo, BigDecimal.ZERO);
         // Remove the class from memory if no more datanodes
@@ -138,10 +137,10 @@ public class FairIOControllerDWRR {
   public float getClassWeight(long classId, String dnuuid) {
     // TODO TODO controlar el cas que no existeixi, llavors preguntar per xattrs
     // aixo passa al apagar i tornar a encedre el sistema, ja que tot esta en memoria
-    LOG.info("CAMAMILLA FairIOControllerDWRR.getClassWeight classId="+classId+" dnid="+dnuuid);        // TODO TODO log
+    LOG.info("CAMAMILLA FairIOController.getClassWeight classId="+classId+" dnid="+dnuuid);        // TODO TODO log
     DatanodeID dnid = nodeUuidtoNodeID.get(dnuuid);
-    DatanodeInfoDWRR info = nodeIDtoInfo.get(dnid);
-    ClassInfoDWRR classInfo = new ClassInfoDWRR(classId);
+    FairIODatanodeInfo info = nodeIDtoInfo.get(dnid);
+    FairIOClassInfo classInfo = new FairIOClassInfo(classId);
     BigDecimal value = info.getClassWeight(classInfo);
     float ret = value.floatValue();
     return ret;
@@ -149,10 +148,10 @@ public class FairIOControllerDWRR {
 
   /* Compute the corresponding shares for all classids */
   public synchronized void computeShares() {
-    HashMap<ClassInfoDWRR, BigDecimal> previousUtilities = new HashMap<ClassInfoDWRR, BigDecimal>();
+    HashMap<FairIOClassInfo, BigDecimal> previousUtilities = new HashMap<FairIOClassInfo, BigDecimal>();
 
     while (!isUtilityConverged(previousUtilities)) {
-      for (ClassInfoDWRR classInfo : classToDatanodes.keySet()) {
+      for (FairIOClassInfo classInfo : classToDatanodes.keySet()) {
         computeSharesByClass(classInfo);
       }
 
@@ -161,37 +160,37 @@ public class FairIOControllerDWRR {
 
   @Deprecated
   public void initializeAllShares() {
-    for (ClassInfoDWRR classInfo : classToDatanodes.keySet()) {
+    for (FairIOClassInfo classInfo : classToDatanodes.keySet()) {
       initializeShares(classInfo);
     }
   }
 
   @Deprecated
-  public void initializeShares(ClassInfoDWRR classInfo) {
+  public void initializeShares(FairIOClassInfo classInfo) {
     int numDatanodes = classToDatanodes.get(classInfo).size();
-    for (DatanodeInfoDWRR datanode : classToDatanodes.get(classInfo)) {
+    for (FairIODatanodeInfo datanode : classToDatanodes.get(classInfo)) {
       BigDecimal initWeight = classInfo.getWeight().divide(new BigDecimal(numDatanodes), CONTEXT);
       datanode.updateClassWeight(classInfo, initWeight);
     }
   }
 
   public String toString() {
-    String res = "ClassInfoDWRR-DatanodeInfoDWRR Status\n";
+    String res = "FairIOClassInfo-FairIODatanodeInfo Status\n";
     res += "-----------------------------\n";
-    for (ClassInfoDWRR classInfo : classToDatanodes.keySet()) {
-      res += "ClassInfoDWRR: "+classInfo+ "\n";
-      for (DatanodeInfoDWRR datanode : classToDatanodes.get(classInfo)) {
+    for (FairIOClassInfo classInfo : classToDatanodes.keySet()) {
+      res += "FairIOClassInfo: "+classInfo+ "\n";
+      for (FairIODatanodeInfo datanode : classToDatanodes.get(classInfo)) {
         BigDecimal classWeight = datanode.getClassWeight(classInfo);
         BigDecimal classShare = datanode.getClassShare(classInfo);
-        res += String.format("\t Datanode %s: %s %s\n", datanode, FairIOControllerDWRR.decimalFormat.format(classWeight), FairIOControllerDWRR.decimalFormat.format(classShare));
+        res += String.format("\t Datanode %s: %s %s\n", datanode, FairIOController.decimalFormat.format(classWeight), FairIOController.decimalFormat.format(classShare));
       }
     }
     return res;
   }
 
-  private BigDecimal getUtility(ClassInfoDWRR classInfo) {
+  private BigDecimal getUtility(FairIOClassInfo classInfo) {
     BigDecimal utility = BigDecimal.ZERO;
-    for (DatanodeInfoDWRR datanode : this.classToDatanodes.get(classInfo)) {
+    for (FairIODatanodeInfo datanode : this.classToDatanodes.get(classInfo)) {
       BigDecimal cj = datanode.getCapacity();
       BigDecimal sij = datanode.getClassShare(classInfo);
       // sum_ut += disk.capacity * disk.get_share_byfile(fid)
@@ -200,9 +199,9 @@ public class FairIOControllerDWRR {
     return utility;
   }
 
-  private Map<ClassInfoDWRR, BigDecimal> getUtilities() {
-    HashMap<ClassInfoDWRR, BigDecimal> utilities = new HashMap<ClassInfoDWRR, BigDecimal>();
-    for (ClassInfoDWRR classInfo : classToDatanodes.keySet()) {
+  private Map<FairIOClassInfo, BigDecimal> getUtilities() {
+    HashMap<FairIOClassInfo, BigDecimal> utilities = new HashMap<FairIOClassInfo, BigDecimal>();
+    for (FairIOClassInfo classInfo : classToDatanodes.keySet()) {
       utilities.put(classInfo, getUtility(classInfo));
     }
     return utilities;
@@ -211,9 +210,9 @@ public class FairIOControllerDWRR {
   /* Return wether the current utility of all classes differ less than
 	 * min utility gap wrt previous utility.
 	 */
-  private boolean isUtilityConverged(Map<ClassInfoDWRR, BigDecimal> previousUtilities) {
+  private boolean isUtilityConverged(Map<FairIOClassInfo, BigDecimal> previousUtilities) {
     boolean converged = true;
-    Map<ClassInfoDWRR, BigDecimal> currentUtilities = getUtilities();
+    Map<FairIOClassInfo, BigDecimal> currentUtilities = getUtilities();
 
     if (currentUtilities.isEmpty())
       return true;
@@ -225,7 +224,7 @@ public class FairIOControllerDWRR {
     }
 
     // Use current utilities to compare with previousUtilities
-    for (ClassInfoDWRR classInfo : currentUtilities.keySet()) {
+    for (FairIOClassInfo classInfo : currentUtilities.keySet()) {
       BigDecimal currentUtility = currentUtilities.get(classInfo);
       BigDecimal previousUtility = previousUtilities.get(classInfo);
       BigDecimal utilityGap = currentUtility.subtract(previousUtility).abs();
@@ -241,14 +240,14 @@ public class FairIOControllerDWRR {
     return converged;
   }
 
-  private void computeSharesByClass(ClassInfoDWRR classInfo) {
-    ArrayList<DatanodeInfoDWRR> datanodes = new ArrayList<DatanodeInfoDWRR>(this.classToDatanodes.get(classInfo));
+  private void computeSharesByClass(FairIOClassInfo classInfo) {
+    ArrayList<FairIODatanodeInfo> datanodes = new ArrayList<FairIODatanodeInfo>(this.classToDatanodes.get(classInfo));
     Collections.sort(datanodes, this.datanodeInfoComparator);
 
     // Optimization algorithm per se
     //sub_total_mins = sum([yj*min_coeff for _, _, _, yj, _, _ in marginals])
     BigDecimal sub_total_mins = BigDecimal.ZERO;
-    for (DatanodeInfoDWRR datanode : datanodes) {
+    for (FairIODatanodeInfo datanode : datanodes) {
       BigDecimal yj = datanode.getTotalWeight();
       sub_total_mins = sub_total_mins.add(yj.multiply(MIN_COEFF));
     }
@@ -258,7 +257,7 @@ public class FairIOControllerDWRR {
     BigDecimal last_coeff = BigDecimal.ZERO;
     int k = 0;
 
-    for (DatanodeInfoDWRR datanode : datanodes) {
+    for (FairIODatanodeInfo datanode : datanodes) {
       BigDecimal yj = datanode.getTotalWeight(); // total weights on this datanode, price
       BigDecimal cj = datanode.getCapacity(); // capacity for this datanode
       // sqrt_wy = (yj * cj).sqrt()
@@ -289,7 +288,7 @@ public class FairIOControllerDWRR {
 
     // Update weight on each node with xij higher than min_coeff
     for (int i = 0; i < k; i++) {
-      DatanodeInfoDWRR datanode = datanodes.get(i);
+      FairIODatanodeInfo datanode = datanodes.get(i);
       BigDecimal yj = datanode.getTotalWeight();
       BigDecimal cj = datanode.getCapacity();
       // xij = ((yj*cj).sqrt() * last_coeff) - yj
@@ -300,7 +299,7 @@ public class FairIOControllerDWRR {
     }
     // Update the rest of nodes with an xij = min_coeff
     for (int i = k; i < datanodes.size(); i++) {
-      DatanodeInfoDWRR datanode = datanodes.get(i);
+      FairIODatanodeInfo datanode = datanodes.get(i);
       BigDecimal yj = datanode.getTotalWeight();
       // xij = yj * min_coeff
       BigDecimal xij = yj.multiply(MIN_COEFF);

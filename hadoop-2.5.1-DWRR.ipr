@@ -240,6 +240,8 @@
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
+    <file url="file://$USER_HOME$/FairIO/hadoop-2.5.1-DWRR.ipr" charset="UTF-8" />
+    <file url="file://$USER_HOME$/FairIO/hadoop-2.5.1-DWRR.iws" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hadoop-assemblies" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hadoop-client" charset="UTF-8" />
@@ -2286,4 +2288,3 @@
     </library>
   </component>
 </project>
-

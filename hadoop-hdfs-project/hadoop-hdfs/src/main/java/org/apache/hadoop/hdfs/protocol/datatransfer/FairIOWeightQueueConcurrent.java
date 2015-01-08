@@ -1,15 +1,19 @@
 package org.apache.hadoop.hdfs.protocol.datatransfer;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TransferQueue;
 
 /**
  * Created by DEIM on 26/09/14.
  */
-public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
+public class FairIOWeightQueueConcurrent<E extends FairIOFlowRequestObject> implements TransferQueue<E> {
 
   private long insertionTime;
   private long processedBytes;
-  private Queue<E> requests;
+  private LinkedTransferQueue<E> requests;
   private float deficitCounter;
   private float weight;
   private int processedRequests;
@@ -17,11 +21,11 @@ public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
   private long classId;
   private boolean newRound;
 
-  public WeightQueueDWRR(long classId, float weight, long time) {
+  public FairIOWeightQueueConcurrent(long classId, float weight, long time) {
     this.weight = weight;
     this.classId = classId;
     this.deficitCounter = 0;
-    this.requests = new LinkedList<E>();
+    this.requests = new LinkedTransferQueue<E>();
     this.processedRequests = 0;
     this.totalRequests = 0;
     this.processedBytes = 0;
@@ -86,6 +90,16 @@ public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
   }
 
   @Override
+  public int drainTo(Collection<? super E> objects) {
+    return requests.drainTo(objects);
+  }
+
+  @Override
+  public int drainTo(Collection<? super E> objects, int i) {
+    return requests.drainTo(objects, i);
+  }
+
+  @Override
   public Iterator<E> iterator() {
     return this.requests.iterator();
   }
@@ -142,6 +156,31 @@ public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
   }
 
   @Override
+  public void put(E e) throws InterruptedException {
+    requests.put(e);
+  }
+
+  @Override
+  public boolean offer(E e, long l, TimeUnit timeUnit) throws InterruptedException {
+    return requests.offer(e, l, timeUnit);
+  }
+
+  @Override
+  public E take() throws InterruptedException {
+    return requests.take();
+  }
+
+  @Override
+  public E poll(long l, TimeUnit timeUnit) throws InterruptedException {
+    return requests.poll(l, timeUnit);
+  }
+
+  @Override
+  public int remainingCapacity() {
+    return requests.remainingCapacity();
+  }
+
+  @Override
   public E remove() {
     return this.requests.remove();
   }
@@ -172,9 +211,9 @@ public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof WeightQueueDWRR)) return false;
+    if (!(o instanceof FairIOWeightQueueConcurrent)) return false;
 
-    WeightQueueDWRR that = (WeightQueueDWRR) o;
+    FairIOWeightQueueConcurrent that = (FairIOWeightQueueConcurrent) o;
 
     if (classId != that.classId) return false;
 
@@ -189,5 +228,30 @@ public class WeightQueueDWRR<E extends RequestObjectDWRR> implements Queue<E> {
 
   public int getQueuedRequests() {
     return requests.size();
+  }
+
+  @Override
+  public boolean tryTransfer(E e) {
+    return requests.tryTransfer(e);
+  }
+
+  @Override
+  public void transfer(E e) throws InterruptedException {
+    requests.transfer(e);
+  }
+
+  @Override
+  public boolean tryTransfer(E e, long l, TimeUnit timeUnit) throws InterruptedException {
+    return requests.tryTransfer(e, l, timeUnit);
+  }
+
+  @Override
+  public boolean hasWaitingConsumer() {
+    return requests.hasWaitingConsumer();
+  }
+
+  @Override
+  public int getWaitingConsumerCount() {
+    return requests.getWaitingConsumerCount();
   }
 }

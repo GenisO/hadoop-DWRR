@@ -52,30 +52,30 @@ import java.util.Map;
  *
  ********************************************************/
 @InterfaceAudience.Private
-public class DFSClientDWRR {
-  public static final Log LOG = LogFactory.getLog(DFSClientDWRR.class);
+public class FairIODFSClient {
+  public static final Log LOG = LogFactory.getLog(FairIODFSClient.class);
 
   final ClientProtocol namenode;
 
   /**
    * Same as this(NameNode.getAddress(conf), conf);
-   * @see #DFSClientDWRR(java.net.InetSocketAddress, org.apache.hadoop.conf.Configuration)
+   * @see #FairIODFSClient(java.net.InetSocketAddress, org.apache.hadoop.conf.Configuration)
    * @deprecated Deprecated at 0.21
    */
   @Deprecated
-  public DFSClientDWRR(Configuration conf) throws IOException {
+  public FairIODFSClient(Configuration conf) throws IOException {
     this(NameNode.getAddress(conf), conf);
   }
 
-  public DFSClientDWRR(InetSocketAddress address, Configuration conf) throws IOException {
+  public FairIODFSClient(InetSocketAddress address, Configuration conf) throws IOException {
     this(NameNode.getUri(address), conf);
   }
 
   /**
    * Same as this(nameNodeUri, conf, null);
-   * @see #DFSClientDWRR(java.net.URI, org.apache.hadoop.conf.Configuration)
+   * @see #FairIODFSClient(java.net.URI, org.apache.hadoop.conf.Configuration)
    */
-  public DFSClientDWRR(URI nameNodeUri, Configuration conf
+  public FairIODFSClient(URI nameNodeUri, Configuration conf
   ) throws IOException {
     this(nameNodeUri, null, conf);
   }
@@ -89,7 +89,7 @@ public class DFSClientDWRR {
    * must be null.
    */
   @VisibleForTesting
-  public DFSClientDWRR(URI nameNodeUri, ClientProtocol rpcNamenode,
+  public FairIODFSClient(URI nameNodeUri, ClientProtocol rpcNamenode,
                        Configuration conf)
     throws IOException {
 

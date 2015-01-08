@@ -1,22 +1,22 @@
 package org.apache.hadoop.hdfs.protocol.datatransfer;
 
 
-import org.apache.hadoop.hdfs.server.datanode.DataXceiverDWRR;
+import org.apache.hadoop.hdfs.server.datanode.FairIODataXceiver;
 
 /**
  * Created by DEIM on 31/07/14.
  */
-public class RequestObjectDWRR {
+public class FairIOFlowRequestObject {
   private static int IDGLOBAL = 0;
   private int id;
   private long size;
 	private Op op;
 	private long classId;
-	private DataXceiverDWRR dXc;
+	private FairIODataXceiver dXc;
   private Integer requestId;
 
-  public RequestObjectDWRR(DataXceiverDWRR dataXceiverDWRR, long classId, Op op, long len) {
-		this.dXc = dataXceiverDWRR;
+  public FairIOFlowRequestObject(FairIODataXceiver dataXceiver, long classId, Op op, long len) {
+		this.dXc = dataXceiver;
 		this.classId = classId;
 		this.op = op;
 		this.size = len;
@@ -39,7 +39,7 @@ public class RequestObjectDWRR {
 		this.op = op;
 	}
 
-	public DataXceiverDWRR getdXc() {
+	public FairIODataXceiver getdXc() {
 		return dXc;
 	}
 
