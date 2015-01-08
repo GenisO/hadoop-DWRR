@@ -447,6 +447,7 @@ class DataXceiver extends Receiver implements Runnable {
       final CachingStrategy cachingStrategy) throws IOException {
 
     long weight = 999;
+    // TODO TODO cgroups
     // If IO is managed by cgroups, move the current thread to the corresponding class group
     if (this.isCgroupManaged) {
       // Move process to corresponding cgroup
